@@ -74,7 +74,7 @@ namespace KlayGE
 		}
 		else
 		{
-			init_state = D3D12_RESOURCE_STATE_COMMON;
+			init_state = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
 			heap_prop.Type = D3D12_HEAP_TYPE_DEFAULT;
 		}
 		heap_prop.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
@@ -139,7 +139,17 @@ namespace KlayGE
 			memcpy(p, subres_init, size_in_byte_);
 			buffer_upload->Unmap(0, nullptr);
 
+			D3D12_RESOURCE_BARRIER barrier;
+			barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+			barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+			if (this->UpdateResourceBarrier(0, barrier, D3D12_RESOURCE_STATE_COPY_DEST))
+			{
+				cmd_list->ResourceBarrier(1, &barrier);
+			}
+
 			cmd_list->CopyResource(d3d_resource_.get(), buffer_upload.get());
+
+			curr_states_[0] = init_state;
 
 			re.CommitResCmd();
 		}
@@ -267,8 +277,12 @@ namespace KlayGE
 			KFL_UNREACHABLE("Invalid buffer access mode");
 		}
 
+		D3D12_RANGE range;
+		range.Begin = 0;
+		range.End = 0;
+
 		void* p;
-		TIFHR(d3d_resource_->Map(0, nullptr, &p));
+		TIFHR(d3d_resource_->Map(0, &range, &p));
 		return p;
 	}
 
@@ -335,7 +349,7 @@ namespace KlayGE
 				barriers[n] = barrier;
 				++ n;
 			}
-			if (this->UpdateResourceBarrier(0, barrier, D3D12_RESOURCE_STATE_COPY_DEST))
+			if (d3d_gb.UpdateResourceBarrier(0, barrier, D3D12_RESOURCE_STATE_COPY_DEST))
 			{
 				barriers[n] = barrier;
 				++ n;

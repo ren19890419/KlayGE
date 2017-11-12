@@ -880,7 +880,11 @@ namespace KlayGE
 
 		if ((TMA_Read_Only == tma) || (TMA_Read_Write == tma))
 		{
-			d3d_texture_readback_heaps_->Map(0, nullptr, reinterpret_cast<void**>(&p));
+			D3D12_RANGE range;
+			range.Begin = 0;
+			range.End = 0;
+
+			d3d_texture_readback_heaps_->Map(0, &range, reinterpret_cast<void**>(&p));
 			uint8_t* src_p = p + layout.Offset + (z_offset * layout.Footprint.Height + y_offset) * layout.Footprint.RowPitch
 				+ x_offset * NumFormatBytes(format_);
 			uint8_t* dst_p = static_cast<uint8_t*>(data);
